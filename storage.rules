@@ -1,0 +1,26 @@
+// storage.rules
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Syllabi - users can only access their own
+    match /syllabi/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // PYQ papers
+    match /pyq/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Assignments
+    match /assignments/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Max file size 15MB
+    match /{allPaths=**} {
+      allow write: if request.auth != null && request.resource.size < 15 * 1024 * 1024;
+    }
+  }
+}
