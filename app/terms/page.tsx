@@ -22,12 +22,8 @@ export default function TermsPage() {
             <p>By using ExamMind AI, you agree to these terms. If you don't agree, please don't use our service.</p>
           </section>
           <section>
-            <h2 className="text-foreground font-semibold text-lg mb-3">2. Free Trial</h2>
-            <p>New users get a 2-day free trial with limited features. No credit card is required during the trial period. After the trial ends, you must subscribe to continue using premium features.</p>
-          </section>
-          <section>
-            <h2 className="text-foreground font-semibold text-lg mb-3">3. Subscriptions & Billing</h2>
-            <p>Subscriptions auto-renew unless cancelled. You can cancel at any time. Refunds are processed within 7 business days for requests made within 24 hours of billing.</p>
+            <h2 className="text-foreground font-semibold text-lg mb-3">2. Access & Use</h2>
+            <p>ExamMind AI is provided free of charge. All users have access to the platform features without requiring a subscription.</p>
           </section>
           <section>
             <h2 className="text-foreground font-semibold text-lg mb-3">4. Acceptable Use</h2>

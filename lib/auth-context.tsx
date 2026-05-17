@@ -9,7 +9,8 @@ import React, {
   ReactNode,
 } from "react";
 import { User } from "firebase/auth";
-import { onAuthChange } from "@/firebase/auth";
+import { onAuthChange, logout } from "@/firebase/auth";
+import { toast } from "sonner";
 import { getUserProfile } from "@/firebase/firestore";
 
 interface UserProfile {
@@ -31,6 +32,9 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  isAuthenticated: boolean;
+  emailVerified: boolean;
+  logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -38,12 +42,16 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   userProfile: null,
   loading: true,
+  isAuthenticated: false,
+  emailVerified: false,
+  logout: async () => {},
   refreshProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [emailVerified, setEmailVerified] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = async () => {
@@ -55,7 +63,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
+      // Email verification enforcement is commented out for now.
+      // Enable this after website deployment.
+      /*
+      if (firebaseUser && !firebaseUser.emailVerified) {
+        await logout();
+        toast.error("Please verify your email first.");
+        setUser(null);
+        setUserProfile(null);
+        setLoading(false);
+        return;
+      }
+      */
+
       setUser(firebaseUser);
+      setEmailVerified(!!firebaseUser?.emailVerified);
       if (firebaseUser) {
         const profile = await getUserProfile(firebaseUser.uid);
         setUserProfile(profile as unknown as UserProfile);
@@ -68,8 +90,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  const isAuthenticated = !!user;
+
+  const handleLogout = async () => {
+    await logout();
+    setUser(null);
+    setUserProfile(null);
+    setEmailVerified(false);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        userProfile,
+        loading,
+        isAuthenticated,
+        emailVerified,
+        logout: handleLogout,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

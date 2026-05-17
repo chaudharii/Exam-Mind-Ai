@@ -179,29 +179,9 @@ OPENAI_API_KEY=sk-proj-...
 
 ---
 
-### Step 5: Razorpay Setup
+### Step 5: Payments
 
-1. Sign up at [Razorpay Dashboard](https://dashboard.razorpay.com)
-2. Complete KYC verification
-3. Go to **Settings** → **API Keys** → **Generate Test Key**
-4. Copy to `.env.local`:
-
-```env
-RAZORPAY_KEY_ID=rzp_test_...
-RAZORPAY_KEY_SECRET=your_secret_here
-```
-
-#### Setup Webhook (for production)
-1. Go to **Settings** → **Webhooks** → **Add New Webhook**
-2. URL: `https://your-domain.com/api/webhook/razorpay`
-3. Events: `payment.captured`, `subscription.charged`, `subscription.cancelled`
-4. Copy webhook secret to `.env.local`:
-```env
-RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
-```
-
-#### Create Subscription Plans (optional, for recurring billing)
-In Razorpay Dashboard → **Subscriptions** → **Plans** → Create plans and add IDs to env.
+Payments are currently disabled in this repository — the product is free to use. All Razorpay integration and billing endpoints have been neutralized. If you later want to re-enable paid subscriptions, follow the original Razorpay integration steps and restore the payment routes.
 
 ---
 
@@ -382,4 +362,4 @@ For issues, check:
 
 ---
 
-Built with ❤️ using Next.js 15, TypeScript, Firebase, OpenAI & Razorpay
+Built with ❤️ using Next.js 15, TypeScript, Firebase, OpenAI

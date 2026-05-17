@@ -31,6 +31,7 @@
     "date-fns": "^4.1.0",
     "firebase": "^10.14.1",
     "framer-motion": "^10.18.0",
+    "groq-sdk": "^1.2.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
     "langchain": "^0.3.5",
@@ -41,7 +42,7 @@
     "openai": "^4.67.3",
     "pdf-parse": "^1.1.1",
     "postcss": "^8.4.47",
-    "razorpay": "^2.9.4",
+    
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.2",

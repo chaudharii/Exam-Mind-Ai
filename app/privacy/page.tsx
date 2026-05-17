@@ -27,7 +27,7 @@ export default function PrivacyPage() {
           </section>
           <section>
             <h2 className="text-foreground font-semibold text-lg mb-3">3. Data Security</h2>
-            <p>All data is encrypted in transit and at rest. We use Firebase's enterprise-grade security infrastructure. Payment data is handled by Razorpay and never stored on our servers.</p>
+            <p>All data is encrypted in transit and at rest. We use Firebase's enterprise-grade security infrastructure. We do not store any payment details on our servers.</p>
           </section>
           <section>
             <h2 className="text-foreground font-semibold text-lg mb-3">4. Data Retention</h2>

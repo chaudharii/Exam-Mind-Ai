@@ -1,0 +1,21 @@
+{
+  "firestore": {
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "hosting": [
+    {
+      "site": "exam-mind-ai",
+      "public": "public",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        {
+          "source": "**",
+          "function": "next"
+        }
+      ]
+    }
+  ]
+}

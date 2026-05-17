@@ -5,6 +5,7 @@ import {
   signInWithPopup,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   User,
   onAuthStateChanged,
@@ -52,6 +53,14 @@ export async function registerWithEmail(
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(userCredential.user, { displayName });
   await createUserProfile(userCredential.user, { displayName });
+  try {
+    // await sendEmailVerification(userCredential.user);
+  } catch (e) {
+    // non-fatal: log and continue
+    // UI callers may show toasts on success/failure
+    // console.warn("sendEmailVerification failed", e);
+  }
+
   return userCredential.user;
 }
 
@@ -70,7 +79,7 @@ export async function loginWithGoogle() {
 
 // Logout
 export async function logout() {
-  await signOut(auth);
+  // await signOut(auth);
 }
 
 // Reset password

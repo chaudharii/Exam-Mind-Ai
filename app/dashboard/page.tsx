@@ -88,7 +88,7 @@ export default function DashboardPage() {
     : 0;
 
   const readinessData = [
-    { name: "readiness", value: userProfile?.examReadiness || 65, fill: "#6366f1" },
+    { name: "readiness", value: userProfile?.examReadiness ?? 65, fill: "#6366f1" },
   ];
 
   const containerVariants = {
@@ -210,12 +210,12 @@ export default function DashboardPage() {
         <motion.div variants={itemVariants} className="bg-card border border-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Exam Readiness</h3>
           <div className="relative">
-            <ResponsiveContainer width="100%" height={140}>
+            <ResponsiveContainer width="100%" height={160}>
               <RadialBarChart
                 cx="50%"
-                cy="100%"
+                cy="50%"
                 innerRadius="60%"
-                outerRadius="80%"
+                outerRadius="90%"
                 startAngle={180}
                 endAngle={0}
                 data={readinessData}
@@ -223,9 +223,9 @@ export default function DashboardPage() {
                 <RadialBar dataKey="value" cornerRadius={10} background={{ fill: "hsl(var(--muted))" }} />
               </RadialBarChart>
             </ResponsiveContainer>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
+            <div className="absolute inset-0 flex items-center justify-center flex-col">
               <div className="text-3xl font-bold gradient-text">
-                {userProfile?.examReadiness || 65}%
+                {userProfile?.examReadiness ?? 65}%
               </div>
               <div className="text-xs text-muted-foreground">Ready</div>
             </div>
