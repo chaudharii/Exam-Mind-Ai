@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  distDir: "functions/.next",
-  // turbopack: {},
+  // Standard Next.js build output for Vercel deployment.
   images: {
     remotePatterns: [
       {
