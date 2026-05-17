@@ -12,7 +12,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && (!user || !user.emailVerified)) {
       router.push("/auth/login");
     }
   }, [user, loading, router]);

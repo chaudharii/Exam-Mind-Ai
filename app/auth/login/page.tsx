@@ -1,6 +1,5 @@
 // app/auth/login/page.tsx
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -10,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { loginWithEmail, loginWithGoogle } from "@/firebase/auth";
+import { loginWithEmail, loginWithGoogle, logout } from "@/firebase/auth";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -29,18 +28,39 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      await loginWithEmail(email, password);
-      toast.success("Welcome back!");
+      const user = await loginWithEmail(email, password);
+
+      // Email verification check
+      if (!user.emailVerified) {
+        await logout();
+        toast.error("Please verify your email first! Check your inbox 📧", {
+          duration: 5000,
+          action: {
+            label: "Resend Email",
+            onClick: async () => {
+              toast.info("Please register again to get a new verification email.");
+            },
+          },
+        });
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Welcome back! 🎉");
       router.push("/dashboard");
     } catch (error: unknown) {
-      const err = error as { code?: string; message?: string };
+      const err = error as { code?: string };
       const msg =
-        err.code === "auth/user-not-found"
+        err.code === "auth/email-not-verified"
+          ? "Please verify your email first! Check inbox 📧"
+          : err.code === "auth/user-not-found"
           ? "No account found with this email"
           : err.code === "auth/wrong-password"
           ? "Incorrect password"
           : err.code === "auth/invalid-credential"
           ? "Invalid email or password"
+          : err.code === "auth/too-many-requests"
+          ? "Too many attempts! Try again later"
           : "Login failed. Please try again.";
       toast.error(msg);
     } finally {
@@ -52,7 +72,7 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      toast.success("Welcome back!");
+      toast.success("Welcome back! 🎉");
       router.push("/dashboard");
     } catch {
       toast.error("Google login failed. Please try again.");
@@ -92,7 +112,9 @@ export default function LoginPage() {
                   className="flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/10"
                 >
                   <span className="text-2xl">{item.emoji}</span>
-                  <span className="text-white/80 text-sm font-medium">{item.text}</span>
+                  <span className="text-white/80 text-sm font-medium">
+                    {item.text}
+                  </span>
                 </div>
               ))}
             </div>
@@ -100,7 +122,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Panel - Login Form */}
+      {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
@@ -118,7 +140,9 @@ export default function LoginPage() {
 
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
-            <p className="text-muted-foreground">Sign in to continue your studies</p>
+            <p className="text-muted-foreground">
+              Sign in to continue your studies
+            </p>
           </div>
 
           {/* Google Login */}
@@ -188,7 +212,11 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -208,7 +236,10 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account?{" "}
-            <Link href="/auth/register" className="text-examind-600 hover:underline font-medium">
+            <Link
+              href="/auth/register"
+              className="text-examind-600 hover:underline font-medium"
+            >
               Sign up free
             </Link>
           </p>

@@ -14,19 +14,23 @@ import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from "./config";
 
 // Create user profile in Firestore
-async function createUserProfile(user: User, additionalData?: { displayName?: string }) {
+async function createUserProfile(
+  user: User,
+  additionalData?: { displayName?: string }
+) {
   const userRef = doc(db, "users", user.uid);
   const userSnap = await getDoc(userRef);
-
   if (!userSnap.exists()) {
     const { email, displayName, photoURL, uid } = user;
     const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 2); // 2-day free trial
-
+    trialEnd.setDate(trialEnd.getDate() + 2);
     await setDoc(userRef, {
       uid,
       email,
-      displayName: additionalData?.displayName || displayName || email?.split("@")[0],
+      displayName:
+        additionalData?.displayName ||
+        displayName ||
+        email?.split("@")[0],
       photoURL: photoURL || null,
       plan: "trial",
       trialEndsAt: trialEnd.toISOString(),
@@ -40,7 +44,6 @@ async function createUserProfile(user: User, additionalData?: { displayName?: st
       examReadiness: 0,
     });
   }
-
   return userRef;
 }
 
@@ -50,27 +53,39 @@ export async function registerWithEmail(
   password: string,
   displayName: string
 ) {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const userCredential = await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
   await updateProfile(userCredential.user, { displayName });
   await createUserProfile(userCredential.user, { displayName });
   try {
-    // await sendEmailVerification(userCredential.user);
+    await sendEmailVerification(userCredential.user);
+    await signOut(auth);
   } catch (e) {
-    // non-fatal: log and continue
-    // UI callers may show toasts on success/failure
-    // console.warn("sendEmailVerification failed", e);
+    console.warn("sendEmailVerification failed", e);
   }
-
   return userCredential.user;
 }
 
 // Login with email/password
 export async function loginWithEmail(email: string, password: string) {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  const userCredential = await signInWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+  if (!userCredential.user.emailVerified) {
+    await signOut(auth);
+    const error = new Error("Email not verified") as Error & { code: string };
+    error.code = "auth/email-not-verified";
+    throw error;
+  }
   return userCredential.user;
 }
 
-// Login with Google
+// Login with Google - always verified
 export async function loginWithGoogle() {
   const userCredential = await signInWithPopup(auth, googleProvider);
   await createUserProfile(userCredential.user);
@@ -79,7 +94,7 @@ export async function loginWithGoogle() {
 
 // Logout
 export async function logout() {
-  // await signOut(auth);
+  await signOut(auth);
 }
 
 // Reset password

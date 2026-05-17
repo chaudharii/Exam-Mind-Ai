@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { registerWithEmail, loginWithGoogle } from "@/firebase/auth";
+import { registerWithEmail, loginWithGoogle, logout } from "@/firebase/auth";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
@@ -34,7 +34,15 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await registerWithEmail(email, password, name);
+      const user = await registerWithEmail(email, password, name);
+      if (user && !user.emailVerified) {
+        toast.success(
+          "Account created! Verification email sent. Please verify your email before signing in."
+        );
+        await logout();
+        router.push("/auth/login");
+        return;
+      }
       toast.success("Account created! Welcome to ExamMind AI 🎉");
       router.push("/dashboard");
     } catch (error: unknown) {

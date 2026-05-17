@@ -63,9 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
-      // Email verification enforcement is commented out for now.
-      // Enable this after website deployment.
-      /*
       if (firebaseUser && !firebaseUser.emailVerified) {
         await logout();
         toast.error("Please verify your email first.");
@@ -74,7 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
-      */
 
       setUser(firebaseUser);
       setEmailVerified(!!firebaseUser?.emailVerified);
