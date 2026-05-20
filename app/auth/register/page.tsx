@@ -49,12 +49,14 @@ export default function RegisterPage() {
       );
       router.push("/auth/login");
     } catch (error: unknown) {
-      const err = error as { code?: string };
+      const err = error as { code?: string; message?: string };
       const msg =
         err.code === "auth/email-already-in-use"
           ? "Email already in use. Please sign in."
           : err.code === "auth/weak-password"
           ? "Password is too weak"
+          : err.message
+          ? err.message
           : "Registration failed. Please try again.";
       toast.error(msg);
     } finally {

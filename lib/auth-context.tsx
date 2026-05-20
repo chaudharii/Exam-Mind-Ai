@@ -63,24 +63,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
-      if (firebaseUser && !firebaseUser.emailVerified) {
-        await logout();
-        toast.error("Please verify your email first.");
+      setLoading(true);
+
+      if (!firebaseUser) {
         setUser(null);
         setUserProfile(null);
+        setEmailVerified(false);
         setLoading(false);
         return;
       }
 
-      setUser(firebaseUser);
-      setEmailVerified(!!firebaseUser?.emailVerified);
-      if (firebaseUser) {
+      try {
+        await firebaseUser.reload();
+        if (!firebaseUser.emailVerified) {
+          await logout();
+          toast.error("Please verify your email first.");
+          setUser(null);
+          setUserProfile(null);
+          setEmailVerified(false);
+          setLoading(false);
+          return;
+        }
+
+        setUser(firebaseUser);
+        setEmailVerified(true);
         const profile = await getUserProfile(firebaseUser.uid);
         setUserProfile(profile as unknown as UserProfile);
-      } else {
+      } catch (error) {
+        console.error("Failed to refresh authentication state:", error);
+        setUser(null);
         setUserProfile(null);
+        setEmailVerified(false);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();

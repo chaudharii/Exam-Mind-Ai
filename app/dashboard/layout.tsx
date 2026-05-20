@@ -8,14 +8,14 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, emailVerified } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && (!user || !user.emailVerified)) {
+    if (!loading && (!user || !emailVerified)) {
       router.push("/auth/login");
     }
-  }, [user, loading, router]);
+  }, [user, loading, emailVerified, router]);
 
   if (loading) {
     return (

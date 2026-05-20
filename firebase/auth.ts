@@ -1,5 +1,6 @@
 // firebase/auth.ts
 import {
+  ActionCodeSettings,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -12,6 +13,13 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from "./config";
+
+const emailVerificationActionCodeSettings: ActionCodeSettings = {
+  url:
+    process.env.NEXT_PUBLIC_EMAIL_VERIFICATION_URL ||
+    "https://exam-mind-ai-six.vercel.app/auth/login",
+  handleCodeInApp: false,
+};
 
 async function createUserProfile(
   user: User,
@@ -58,14 +66,21 @@ export async function registerWithEmail(
   );
   await updateProfile(userCredential.user, { displayName });
   await createUserProfile(userCredential.user, { displayName });
+
   try {
-   await sendEmailVerification(userCredential.user, {
-     url: "https://exam-mind-ai-six.vercel.app/auth/login",
-    handleCodeInApp: false,
-   });
-  } catch (e) {
-    console.warn("Verification email failed:", e);
+    await sendEmailVerification(
+      userCredential.user,
+      emailVerificationActionCodeSettings
+    );
+  } catch (error: unknown) {
+    await signOut(auth);
+    const authError = error as { message?: string };
+    throw new Error(
+      authError.message ||
+        "Unable to send verification email. Please check Firebase email settings and try again."
+    );
   }
+
   await signOut(auth);
   return userCredential.user;
 }
@@ -76,6 +91,7 @@ export async function loginWithEmail(email: string, password: string) {
     email,
     password
   );
+  await userCredential.user.reload();
   return userCredential.user;
 }
 

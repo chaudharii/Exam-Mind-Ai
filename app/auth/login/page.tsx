@@ -27,37 +27,24 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
+
     try {
-      const user = await loginWithEmail(
-  email,
-  password
-);
+      const user = await loginWithEmail(email, password);
+      await user.reload();
 
-await user.reload();
-
-if (!user.emailVerified) {
-  await logout();
-
-  toast.error(
-    "Please verify your email first!"
-  );
-
-   return;
- }
       if (!user.emailVerified) {
         await logout();
         toast.error(
           "Please verify your email first! Check your inbox 📧",
           { duration: 5000 }
         );
-        setLoading(false);
         return;
       }
 
       toast.success("Welcome Student! 🎉");
       router.push("/dashboard");
     } catch (error: unknown) {
-      const err = error as { code?: string };
+      const err = error as { code?: string; message?: string };
       const msg =
         err.code === "auth/user-not-found"
           ? "No account found with this email"
@@ -67,6 +54,8 @@ if (!user.emailVerified) {
           ? "Invalid email or password"
           : err.code === "auth/too-many-requests"
           ? "Too many attempts! Try again later"
+          : err.message
+          ? err.message
           : "Login failed. Please try again.";
       toast.error(msg);
     } finally {
