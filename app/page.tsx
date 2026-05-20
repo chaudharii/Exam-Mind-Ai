@@ -60,28 +60,28 @@ const features = [
 ];
 
 const stats = [
-  { value: "50K+", label: "Students" },
+  { value: "50+", label: "Students" },
   { value: "98%", label: "Pass Rate" },
-  { value: "10M+", label: "Notes Generated" },
+  { value: "10+", label: "Notes Generated" },
   { value: "4.9★", label: "App Rating" },
 ];
 
 const testimonials = [
   {
-    name: "Priya Sharma",
-    college: "IIT Delhi",
+    name: "Ishwor Chaudhary",
+    college: "Chandigarh University",
     text: "ExamMind AI helped me predict 8 out of 10 exam questions correctly! The PYQ analysis is insane.",
     avatar: "PS",
   },
   {
-    name: "Rahul Verma",
-    college: "NIT Trichy",
+    name: "Rahul Chaudhary",
+    college: "Chandigarh University",
     text: "The handwritten assignment generator saved me hours. Professors can't even tell it's AI-generated!",
     avatar: "RV",
   },
   {
-    name: "Anjali Patel",
-    college: "VIT Vellore",
+    name: "Rajkapoor Chaudhary",
+    college: "prokhara University Nepal",
     text: "Study planner is a game changer. I went from failing to scoring 85% in just one semester.",
     avatar: "AP",
   },
@@ -190,7 +190,7 @@ export default function LandingPage() {
             className="mt-4 text-sm text-muted-foreground"
           >
             <Shield className="w-3 h-3 inline mr-1" />
-            Free for 2 days. Continue only if you like it. Cancel anytime.
+            Free for some days. Continue only if you like it.
           </motion.p>
 
           {/* Stats */}
