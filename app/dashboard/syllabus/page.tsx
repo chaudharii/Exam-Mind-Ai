@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/lib/auth-context";
-import { saveUpload } from "@/firebase/firestore";
+import { saveUpload, incrementUserProfileField } from "@/firebase/firestore";
 import { uploadSyllabus } from "@/firebase/storage";
 import { toast } from "sonner";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
@@ -33,7 +33,7 @@ interface SyllabusAnalysis {
 }
 
 export default function SyllabusAnalyzerPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,7 +77,6 @@ export default function SyllabusAnalyzerPage() {
 
     try {
       // Read file text
-      const text = await file.text();
       setProgress(30);
 
       // Upload to Firebase Storage
@@ -89,15 +88,14 @@ export default function SyllabusAnalyzerPage() {
       }
       setProgress(50);
 
-      // Call AI analysis API
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("subject", subject || "General");
+      formData.append("uid", user.uid);
+
       const response = await fetch("/api/ai/analyze-syllabus", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: text.slice(0, 5000),
-          subject: subject || "General",
-          uid: user.uid,
-        }),
+        body: formData,
       });
 
       if (!response.ok) throw new Error("Analysis failed");
@@ -115,6 +113,10 @@ export default function SyllabusAnalyzerPage() {
       setProgress(100);
 
       setAnalysis(result);
+      if (user) {
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
+      }
       toast.success("Syllabus analyzed successfully!");
     } catch (err) {
       console.error(err);

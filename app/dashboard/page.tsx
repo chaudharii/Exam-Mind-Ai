@@ -56,7 +56,7 @@ const weeklyData = [
 ];
 
 export default function DashboardPage() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, refreshProfile } = useAuth();
   const [uploads, setUploads] = useState<unknown[]>([]);
   const [notes, setNotes] = useState<unknown[]>([]);
   const [streak, setStreak] = useState(0);
@@ -70,6 +70,10 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     if (!user) return;
     try {
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+
       const [uploadsData, notesData, newStreak] = await Promise.all([
         getUserUploads(user.uid),
         getUserNotes(user.uid),

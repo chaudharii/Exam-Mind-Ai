@@ -7,7 +7,7 @@ import { Calendar, Sparkles, Clock, BookOpen, Target, Lightbulb, Plus, X } from 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
-import { saveStudyPlan } from "@/firebase/firestore";
+import { saveStudyPlan, incrementUserProfileField } from "@/firebase/firestore";
 import { toast } from "sonner";
 
 interface DayTask { subject: string; topic: string; duration: number; type: string; }
@@ -34,7 +34,7 @@ const taskTypeColor: Record<string, string> = {
 };
 
 export default function PlannerPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [examDate, setExamDate] = useState("");
   const [subjects, setSubjects] = useState<string[]>([""]);
   const [prepLevel, setPrepLevel] = useState("intermediate");
@@ -66,6 +66,8 @@ export default function PlannerPage() {
 
       if (user) {
         await saveStudyPlan(user.uid, { examDate, subjects: validSubjects, preparationLevel: prepLevel, plan: result as unknown as Record<string, unknown> });
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
       }
       toast.success("Study plan created!");
     } catch {

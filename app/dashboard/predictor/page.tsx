@@ -7,7 +7,7 @@ import { BarChart3, Sparkles, TrendingUp, AlertTriangle, CheckCircle, Plus, X } 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
-import { savePrediction } from "@/firebase/firestore";
+import { savePrediction, incrementUserProfileField } from "@/firebase/firestore";
 import { toast } from "sonner";
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from "recharts";
 import { getGradeColor, getProbabilityColor } from "@/utils";
@@ -23,7 +23,7 @@ interface Prediction {
 }
 
 export default function PredictorPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [attendance, setAttendance] = useState(75);
   const [internalMarks, setInternalMarks] = useState(60);
   const [studyHours, setStudyHours] = useState(4);
@@ -51,7 +51,11 @@ export default function PredictorPage() {
       if (!res.ok) throw new Error();
       const result: Prediction = await res.json();
       setPrediction(result);
-      if (user) await savePrediction(user.uid, { type: "performance", ...result });
+      if (user) {
+        await savePrediction(user.uid, { type: "performance", ...result });
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
+      }
       toast.success("Performance predicted!");
     } catch {
       toast.error("Prediction failed. Try again.");

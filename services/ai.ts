@@ -16,33 +16,57 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   throw new Error("Max retries exceeded");
 }
 
-export async function analyzeSyllabus(syllabusText: string) {
+function extractJsonObject(text: string) {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("Unable to locate JSON object in AI response");
+  }
+  return text.slice(start, end + 1);
+}
+
+function parseAiResponse(content: string) {
+  const trimmed = content.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return JSON.parse(extractJsonObject(trimmed));
+  }
+}
+
+export async function analyzeSyllabus(syllabusText: string, subject: string = "General") {
   return withRetry(async () => {
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: "You are a syllabus analyzer. Return valid JSON only, no markdown." },
-        { role: "user", content: `Analyze syllabus and return JSON: {"units":[{"name":"Unit","topics":["topic1"],"weightage":20}],"summary":"summary","importantTopics":["topic"],"totalTopics":5}\n\nSyllabus: ${syllabusText.slice(0, 3000)}` },
+        {
+          role: "user",
+          content: `Analyze the syllabus for the subject "${subject}" and return valid JSON only. Use this format exactly: {"units":[{"name":"Unit","topics":["topic1"],"weightage":20}],"summary":"summary","importantTopics":["topic"],"totalTopics":5}\n\nSyllabus: ${syllabusText.slice(0, 3000)}`,
+        },
       ],
       temperature: 0.3,
       max_tokens: 2000,
     });
-    return JSON.parse(res.choices[0].message.content || "{}");
+    return parseAiResponse(res.choices[0].message.content || "");
   });
 }
 
-export async function analyzePYQ(pyqText: string) {
+export async function analyzePYQ(pyqText: string, subject: string = "General") {
   return withRetry(async () => {
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: "You analyze previous year question papers. Return valid JSON only, no markdown." },
-        { role: "user", content: `Analyze PYQ and return JSON: {"repeatedQuestions":[{"question":"q","frequency":3,"probability":85}],"importantTopics":[{"topic":"t","weightage":30}],"predictions":[{"question":"q","probability":90,"reasoning":"r"}],"trends":["trend1"]}\n\nPYQ: ${pyqText.slice(0, 3000)}` },
+        {
+          role: "user",
+          content: `Analyze previous year questions for the subject "${subject}" and return valid JSON only. Use this format exactly: {"repeatedQuestions":[{"question":"q","frequency":3,"probability":85}],"importantTopics":[{"topic":"t","weightage":30}],"predictions":[{"question":"q","probability":90,"reasoning":"r"}],"trends":["trend1"]}\n\nPYQ: ${pyqText.slice(0, 3000)}`,
+        },
       ],
       temperature: 0.2,
       max_tokens: 2000,
     });
-    return JSON.parse(res.choices[0].message.content || "{}");
+    return parseAiResponse(res.choices[0].message.content || "");
   });
 }
 

@@ -7,6 +7,7 @@ import { Mic, Sparkles, ChevronDown, ChevronUp, HelpCircle, MessageCircle } from
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
+import { incrementUserProfileField } from "@/firebase/firestore";
 import { toast } from "sonner";
 
 interface VivaQuestion {
@@ -23,7 +24,7 @@ const difficultyColor: Record<string, string> = {
 };
 
 export default function VivaPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,6 +48,10 @@ export default function VivaPage() {
       setQuestions(qs);
       setExpandedIdx(null);
       setPracticeMode(false);
+      if (user) {
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
+      }
       toast.success("Viva questions generated!");
     } catch {
       toast.error("Failed to generate questions.");

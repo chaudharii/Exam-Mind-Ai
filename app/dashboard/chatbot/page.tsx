@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Send, Brain, User, Trash2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
-import { saveChatMessage, getChatHistory } from "@/firebase/firestore";
+import { saveChatMessage, getChatHistory, incrementUserProfileField } from "@/firebase/firestore";
 import { generateId } from "@/utils";
 import { toast } from "sonner";
 
@@ -27,7 +27,7 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export default function ChatbotPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<Message[]>([
@@ -103,6 +103,8 @@ export default function ChatbotPage() {
           content: reply,
           sessionId,
         });
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
       }
     } catch {
       toast.error("Failed to get response. Please try again.");

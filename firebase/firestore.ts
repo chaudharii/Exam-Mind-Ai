@@ -14,6 +14,7 @@ import {
   limit,
   serverTimestamp,
   Timestamp,
+  increment,
 } from "firebase/firestore";
 import { db } from "./config";
 
@@ -24,6 +25,15 @@ import { db } from "./config";
 export async function updateUserProfile(uid: string, data: Record<string, unknown>) {
   const userRef = doc(db, "users", uid);
   await updateDoc(userRef, { ...data, updatedAt: serverTimestamp() });
+}
+
+export async function incrementUserProfileField(uid: string, field: string, value: number) {
+  const userRef = doc(db, "users", uid);
+  await updateDoc(userRef, {
+    [field]: increment(value),
+    lastActiveDate: new Date().toISOString(),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function getUserProfile(uid: string) {

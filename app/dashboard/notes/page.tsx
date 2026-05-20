@@ -1,15 +1,14 @@
 // app/dashboard/notes/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Sparkles, Copy, Download, Save, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
-import { saveNote, getUserNotes } from "@/firebase/firestore";
+import { saveNote, getUserNotes, incrementUserProfileField } from "@/firebase/firestore";
 import { toast } from "sonner";
-import { useEffect } from "react";
 
 const NOTE_TYPES = [
   { id: "short", label: "Short Notes", emoji: "📝", desc: "Concise bullet points" },
@@ -38,7 +37,7 @@ interface SavedNote {
 }
 
 export default function NotesPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
   const [noteType, setNoteType] = useState<NoteType>("short");
@@ -74,6 +73,10 @@ export default function NotesPage() {
 
       const result = await response.json();
       setNote(result);
+      if (user) {
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
+      }
       toast.success("Notes generated successfully!");
     } catch {
       toast.error("Failed to generate notes. Please try again.");

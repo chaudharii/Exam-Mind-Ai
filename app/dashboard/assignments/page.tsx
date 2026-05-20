@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PenTool, Sparkles, Download, Eye, FileText, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
-import { saveAssignment } from "@/firebase/firestore";
+import { saveAssignment, incrementUserProfileField } from "@/firebase/firestore";
 import { toast } from "sonner";
 
 interface AssignmentData {
@@ -16,7 +16,7 @@ interface AssignmentData {
 }
 
 export default function AssignmentsPage() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, refreshProfile } = useAuth();
   const previewRef = useRef<HTMLDivElement>(null);
   const [question, setQuestion] = useState("");
   const [subject, setSubject] = useState("");
@@ -53,6 +53,10 @@ export default function AssignmentsPage() {
 
       const result: AssignmentData = await response.json();
       setAssignment(result);
+      if (user) {
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
+      }
       toast.success("Assignment answer generated!");
     } catch {
       toast.error("Failed to generate assignment. Try again.");
@@ -92,6 +96,8 @@ export default function AssignmentsPage() {
           answer: assignment.answer,
           subject,
         });
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
       }
 
       toast.success("Handwritten assignment ready! Click Download PDF.");

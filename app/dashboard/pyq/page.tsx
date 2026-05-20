@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/lib/auth-context";
-import { saveUpload, savePrediction } from "@/firebase/firestore";
+import { saveUpload, savePrediction, incrementUserProfileField } from "@/firebase/firestore";
 import { uploadPYQ } from "@/firebase/storage";
 import { toast } from "sonner";
 import {
@@ -39,7 +39,7 @@ interface PYQAnalysis {
 }
 
 export default function PYQPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [subject, setSubject] = useState("");
@@ -60,19 +60,24 @@ export default function PYQPage() {
     setLoading(true);
     setUploadProgress(10);
     try {
-      const text = await file.text();
       setUploadProgress(30);
 
       let fileUrl = "";
       try {
         fileUrl = await uploadPYQ(user.uid, file);
-      } catch { console.warn("Storage upload skipped"); }
+      } catch {
+        console.warn("Storage upload skipped");
+      }
       setUploadProgress(55);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("subject", subject || "General");
+      formData.append("uid", user.uid);
 
       const response = await fetch("/api/ai/analyze-pyq", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text.slice(0, 5000), subject: subject || "General", uid: user.uid }),
+        body: formData,
       });
 
       if (!response.ok) throw new Error("Analysis failed");
@@ -84,6 +89,10 @@ export default function PYQPage() {
       setUploadProgress(100);
 
       setAnalysis(result);
+      if (user) {
+        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
+        await refreshProfile();
+      }
       toast.success("PYQ analysis complete!");
     } catch {
       toast.error("Analysis failed. Please try again.");
