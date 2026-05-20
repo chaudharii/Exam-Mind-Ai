@@ -28,8 +28,22 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      const user = await loginWithEmail(email, password);
+      const user = await loginWithEmail(
+  email,
+  password
+);
 
+await user.reload();
+
+if (!user.emailVerified) {
+  await logout();
+
+  toast.error(
+    "Please verify your email first!"
+  );
+
+   return;
+ }
       if (!user.emailVerified) {
         await logout();
         toast.error(

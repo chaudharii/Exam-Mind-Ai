@@ -59,7 +59,10 @@ export async function registerWithEmail(
   await updateProfile(userCredential.user, { displayName });
   await createUserProfile(userCredential.user, { displayName });
   try {
-    await sendEmailVerification(userCredential.user);
+   await sendEmailVerification(userCredential.user, {
+     url: "https://exam-mind-ai-six.vercel.app/auth/login",
+    handleCodeInApp: false,
+   });
   } catch (e) {
     console.warn("Verification email failed:", e);
   }
