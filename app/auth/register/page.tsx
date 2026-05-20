@@ -1,16 +1,24 @@
 // app/auth/register/page.tsx
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Brain, Mail, Lock, Eye, EyeOff, User, Chrome, Shield } from "lucide-react";
+import {
+  Brain,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  Chrome,
+  Shield,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { registerWithEmail, loginWithGoogle, logout } from "@/firebase/auth";
+import { registerWithEmail, loginWithGoogle } from "@/firebase/auth";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
@@ -34,17 +42,12 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const user = await registerWithEmail(email, password, name);
-      if (user && !user.emailVerified) {
-        toast.success(
-          "Account created! Verification email sent. Please verify your email before signing in."
-        );
-        await logout();
-        router.push("/auth/login");
-        return;
-      }
-      toast.success("Account created! Welcome to ExamMind AI 🎉");
-      router.push("/dashboard");
+      await registerWithEmail(email, password, name);
+      toast.success(
+        "Account created! Check your email to verify 📧",
+        { duration: 6000 }
+      );
+      router.push("/auth/login");
     } catch (error: unknown) {
       const err = error as { code?: string };
       const msg =
@@ -74,7 +77,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-900 via-examind-800 to-examind-900 relative overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-grid opacity-20" />
         <div className="relative text-center px-12">
@@ -87,27 +89,33 @@ export default function RegisterPage() {
               <Brain className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-white mb-4">
-              Start Your Free Trial
+              Start For Free!
             </h2>
             <p className="text-white/70 text-lg mb-8">
-              Join 50,000+ students who score higher with ExamMind AI
+              Join students who score higher with ExamMind AI
             </p>
-
-            {/* Trial Benefits */}
             <div className="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20 text-left">
               <div className="flex items-center gap-2 mb-4">
                 <Shield className="w-5 h-5 text-green-400" />
-                <span className="text-white font-semibold">Your 2-Day Free Trial Includes:</span>
+                <span className="text-white font-semibold">
+                  Free Features Include:
+                </span>
               </div>
               <ul className="space-y-3">
                 {[
                   "Syllabus Analyzer — extract key topics",
                   "AI Notes Generator — all formats",
                   "AI Chatbot — unlimited questions",
-                  "Basic PYQ Analysis",
+                  "PYQ Analysis & Predictions",
                   "Study Planning assistance",
+                  "Handwritten Assignments",
+                  "Viva Preparation",
+                  "Performance Predictor",
                 ].map((benefit) => (
-                  <li key={benefit} className="flex items-start gap-2 text-white/80 text-sm">
+                  <li
+                    key={benefit}
+                    className="flex items-start gap-2 text-white/80 text-sm"
+                  >
                     <span className="text-green-400 mt-0.5">✓</span>
                     {benefit}
                   </li>
@@ -115,7 +123,7 @@ export default function RegisterPage() {
               </ul>
               <div className="mt-4 pt-4 border-t border-white/20">
                 <p className="text-white/60 text-xs">
-                  Free for 2 days. No credit card required. Cancel anytime.
+                  100% Free. No credit card required. Ever.
                 </p>
               </div>
             </div>
@@ -123,7 +131,6 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right Panel - Register Form */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
@@ -131,20 +138,22 @@ export default function RegisterPage() {
           transition={{ duration: 0.4 }}
           className="w-full max-w-md"
         >
-          {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-examind-500 to-purple-600 flex items-center justify-center">
               <Brain className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-xl gradient-text">ExamMind AI</span>
+            <span className="font-bold text-xl gradient-text">
+              ExamMind AI
+            </span>
           </div>
 
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Create your account</h1>
-            <p className="text-muted-foreground">Start your 2-day free trial today</p>
+            <p className="text-muted-foreground">
+              100% free — no credit card needed!
+            </p>
           </div>
 
-          {/* Google Signup */}
           <Button
             type="button"
             variant="outline"
@@ -167,7 +176,6 @@ export default function RegisterPage() {
             </span>
           </div>
 
-          {/* Registration Form */}
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -220,7 +228,11 @@ export default function RegisterPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -240,14 +252,21 @@ export default function RegisterPage() {
 
           <p className="text-center text-xs text-muted-foreground mt-4">
             By signing up you agree to our{" "}
-            <Link href="/terms" className="text-examind-600 hover:underline">Terms</Link>
-            {" "}and{" "}
-            <Link href="/privacy" className="text-examind-600 hover:underline">Privacy Policy</Link>
+            <Link href="/terms" className="text-examind-600 hover:underline">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-examind-600 hover:underline">
+              Privacy Policy
+            </Link>
           </p>
 
           <p className="text-center text-sm text-muted-foreground mt-4">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-examind-600 hover:underline font-medium">
+            <Link
+              href="/auth/login"
+              className="text-examind-600 hover:underline font-medium"
+            >
               Sign in
             </Link>
           </p>

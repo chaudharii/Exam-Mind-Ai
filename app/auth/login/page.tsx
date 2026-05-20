@@ -30,30 +30,22 @@ export default function LoginPage() {
     try {
       const user = await loginWithEmail(email, password);
 
-      // Email verification check
       if (!user.emailVerified) {
         await logout();
-        toast.error("Please verify your email first! Check your inbox 📧", {
-          duration: 5000,
-          action: {
-            label: "Resend Email",
-            onClick: async () => {
-              toast.info("Please register again to get a new verification email.");
-            },
-          },
-        });
+        toast.error(
+          "Please verify your email first! Check your inbox 📧",
+          { duration: 5000 }
+        );
         setLoading(false);
         return;
       }
 
-      toast.success("Welcome back! 🎉");
+      toast.success("Welcome Student! 🎉");
       router.push("/dashboard");
     } catch (error: unknown) {
       const err = error as { code?: string };
       const msg =
-        err.code === "auth/email-not-verified"
-          ? "Please verify your email first! Check inbox 📧"
-          : err.code === "auth/user-not-found"
+        err.code === "auth/user-not-found"
           ? "No account found with this email"
           : err.code === "auth/wrong-password"
           ? "Incorrect password"
@@ -72,7 +64,7 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      toast.success("Welcome back! 🎉");
+      toast.success("Welcome Student! 🎉");
       router.push("/dashboard");
     } catch {
       toast.error("Google login failed. Please try again.");
@@ -83,7 +75,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-examind-900 via-examind-800 to-purple-900 relative overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-grid opacity-20" />
         <div className="relative text-center px-12">
@@ -95,10 +86,12 @@ export default function LoginPage() {
             <div className="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center mx-auto mb-8 border border-white/20">
               <Brain className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-4xl font-bold text-white mb-4">ExamMind AI</h2>
+            <h2 className="text-4xl font-bold text-white mb-4">
+              ExamMind AI
+            </h2>
             <p className="text-white/70 text-lg max-w-md">
-              Your AI-powered study companion. Analyze syllabi, predict questions,
-              generate notes, and ace your exams.
+              Your AI-powered study companion. Analyze syllabi, predict
+              questions, generate notes, and ace your exams.
             </p>
             <div className="mt-12 grid grid-cols-2 gap-4 text-left">
               {[
@@ -122,7 +115,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
@@ -130,22 +122,22 @@ export default function LoginPage() {
           transition={{ duration: 0.4 }}
           className="w-full max-w-md"
         >
-          {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-examind-500 to-purple-600 flex items-center justify-center">
               <Brain className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-xl gradient-text">ExamMind AI</span>
+            <span className="font-bold text-xl gradient-text">
+              ExamMind AI
+            </span>
           </div>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
+            <h1 className="text-3xl font-bold mb-2">Welcome Student!</h1>
             <p className="text-muted-foreground">
               Sign in to continue your studies
             </p>
           </div>
 
-          {/* Google Login */}
           <Button
             type="button"
             variant="outline"
@@ -168,7 +160,6 @@ export default function LoginPage() {
             </span>
           </div>
 
-          {/* Email Form */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
