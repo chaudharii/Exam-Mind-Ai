@@ -98,7 +98,10 @@ export default function SyllabusAnalyzerPage() {
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Analysis failed");
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "Server error" }));
+        throw new Error(error.error || `HTTP ${response.status}`);
+      }
       const result = await response.json();
       setProgress(80);
 
@@ -120,7 +123,14 @@ export default function SyllabusAnalyzerPage() {
       toast.success("Syllabus analyzed successfully!");
     } catch (err) {
       console.error(err);
-      toast.error("Analysis failed. Please try again.");
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      if (errorMsg.includes("timeout")) {
+        toast.error("Analysis took too long. Try a smaller file.");
+      } else if (errorMsg.includes("504")) {
+        toast.error("Server timeout. Please try again.");
+      } else {
+        toast.error(errorMsg || "Analysis failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import pdfParse from "pdf-parse";
 import { analyzePYQ } from "@/services/ai";
 
+const API_TIMEOUT = 45000; // 45 seconds
+
+async function withTimeout<T>(fn: () => Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    fn(),
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Request timeout after ${timeoutMs}ms`)),
+        timeoutMs
+      )
+    ),
+  ]);
+}
+
 async function extractText(req: NextRequest) {
   const contentType = req.headers.get("content-type") || "";
 
@@ -41,12 +55,19 @@ async function extractText(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, subject, uid } = await extractText(req);
+    const { text, subject, uid } = await withTimeout(() => extractText(req), 5000);
     if (!text || !uid) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    const result = await analyzePYQ(text, subject);
+
+    console.log(`Analyzing PYQ for subject: ${subject}, text length: ${text.length}`);
+    const result = await withTimeout(() => analyzePYQ(text, subject), API_TIMEOUT);
+    console.log("PYQ analysis complete");
     return NextResponse.json(result);
-  } catch (error) {
-    console.error("PYQ analysis error:", error);
-    return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("PYQ analysis error:", errorMessage);
+    if (errorMessage.includes("timeout")) {
+      return NextResponse.json({ error: "Analysis timeout - try a smaller file" }, { status: 504 });
+    }
+    return NextResponse.json({ error: errorMessage || "Analysis failed" }, { status: 500 });
   }
 }

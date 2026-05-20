@@ -2,6 +2,8 @@ import Groq from "groq-sdk";
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
+  timeout: 50000, // 50 second timeout
+  maxRetries: 1, // Let our withRetry handle retries
 });
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
@@ -9,8 +11,12 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
     try {
       return await fn();
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.log(`Attempt ${i + 1}/${retries} failed: ${errorMsg}`);
       if (i === retries - 1) throw error;
-      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+      const delay = 1000 * (i + 1);
+      console.log(`Retrying in ${delay}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
     }
   }
   throw new Error("Max retries exceeded");

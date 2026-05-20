@@ -3,6 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import pdfParse from "pdf-parse";
 import { analyzeSyllabus } from "@/services/ai";
 
+const API_TIMEOUT = 45000; // 45 seconds
+
+async function withTimeout<T>(fn: () => Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    fn(),
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Request timeout after ${timeoutMs}ms`)),
+        timeoutMs
+      )
+    ),
+  ]);
+}
+
 async function extractText(req: NextRequest) {
   const contentType = req.headers.get("content-type") || "";
 
@@ -41,14 +55,20 @@ async function extractText(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, subject, uid } = await extractText(req);
+    const { text, subject, uid } = await withTimeout(() => extractText(req), 5000);
     if (!text) return NextResponse.json({ error: "Text required" }, { status: 400 });
     if (!uid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const result = await analyzeSyllabus(text, subject);
+    console.log(`Analyzing syllabus for subject: ${subject}, text length: ${text.length}`);
+    const result = await withTimeout(() => analyzeSyllabus(text, subject), API_TIMEOUT);
+    console.log("Syllabus analysis complete");
     return NextResponse.json(result);
-  } catch (error) {
-    console.error("Syllabus analysis error:", error);
-    return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Syllabus analysis error:", errorMessage);
+    if (errorMessage.includes("timeout")) {
+      return NextResponse.json({ error: "Analysis timeout - try a smaller file" }, { status: 504 });
+    }
+    return NextResponse.json({ error: errorMessage || "Analysis failed" }, { status: 500 });
   }
 }
