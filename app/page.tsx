@@ -71,19 +71,19 @@ const testimonials = [
     name: "Ishwor Chaudhary",
     college: "Chandigarh University",
     text: "ExamMind AI helped me predict 8 out of 10 exam questions correctly! The PYQ analysis is insane.",
-    avatar: "PS",
+    avatar: "RC",
   },
   {
     name: "Rahul Chaudhary",
     college: "Chandigarh University",
     text: "The handwritten assignment generator saved me hours. Professors can't even tell it's AI-generated!",
-    avatar: "RV",
+    avatar: "RC",
   },
   {
     name: "Rajkapoor Chaudhary",
     college: "prokhara University Nepal",
     text: "Study planner is a game changer. I went from failing to scoring 85% in just one semester.",
-    avatar: "AP",
+    avatar: "RC",
   },
 ];
 
@@ -308,7 +308,7 @@ export default function LandingPage() {
               <ul className="space-y-3 mb-8">
                 {[
                   "Everything in Pro Monthly",
-                  "2 months free",
+                  "Every months free for sometime",
                   "Advanced analytics",
                   "Export all as PDF",
                   "Priority support",
