@@ -172,7 +172,7 @@ export default function LandingPage() {
                 className="bg-examind-600 hover:bg-examind-700 text-white h-12 px-8 text-base glow-primary"
               >
                 <Zap className="w-4 h-4 mr-2" />
-                Start Free — 2 Days Trial
+                Start Free —  Days Trial
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -247,7 +247,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-muted-foreground text-lg">Start free, upgrade when you're ready.</p>
+            <p className="text-muted-foreground text-lg">Start free, No need to upgrade for sometime.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -255,9 +255,9 @@ export default function LandingPage() {
             <div className="bg-card border border-border rounded-2xl p-8">
               <div className="badge-trial mb-4">Free Trial</div>
               <div className="text-4xl font-bold mb-1">₹0</div>
-              <div className="text-muted-foreground text-sm mb-6">For 2 days</div>
+              <div className="text-muted-foreground text-sm mb-6">For someday days</div>
               <ul className="space-y-3 mb-8">
-                {["5 AI requests/day", "Syllabus Analyzer", "Basic Notes", "AI Chatbot (limited)"].map((f) => (
+                {["5 AI requests/day", "Syllabus Analyzer", "Basic Notes", "AI Chatbot (unlimited)"].map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm">
                     <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
                     {f}
@@ -275,8 +275,8 @@ export default function LandingPage() {
                 MOST POPULAR
               </div>
               <div className="badge-pro mb-4">Pro Monthly</div>
-              <div className="text-4xl font-bold mb-1">₹299</div>
-              <div className="text-muted-foreground text-sm mb-6">per month</div>
+              <div className="text-4xl font-bold mb-1">₹0 for sometime</div>
+              <div className="text-muted-foreground text-sm mb-6">free per month</div>
               <ul className="space-y-3 mb-8">
                 {[
                   "Unlimited AI requests",
@@ -302,9 +302,9 @@ export default function LandingPage() {
             {/* Pro Yearly */}
             <div className="bg-card border border-border rounded-2xl p-8">
               <div className="badge-pro mb-4">Pro Yearly</div>
-              <div className="text-4xl font-bold mb-1">₹1,999</div>
+              <div className="text-4xl font-bold mb-1">₹0 for sometime</div>
               <div className="text-muted-foreground text-sm mb-1">per year</div>
-              <div className="text-green-500 text-xs font-semibold mb-6">Save ₹1,589!</div>
+              <div className="text-green-500 text-xs font-semibold mb-6">Save ₹0</div>
               <ul className="space-y-3 mb-8">
                 {[
                   "Everything in Pro Monthly",
@@ -331,7 +331,7 @@ export default function LandingPage() {
       <section id="testimonials" className="py-20 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Loved by Students Across India</h2>
+            <h2 className="text-4xl font-bold mb-4">Loved by Students Across India and Nepal</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((t, i) => (
@@ -374,7 +374,7 @@ export default function LandingPage() {
                 Ready to Ace Your Exams?
               </h2>
               <p className="text-white/80 text-lg mb-8">
-                Join 50,000+ students already using ExamMind AI
+                Join 5+ students already using ExamMind AI
               </p>
               <Link href="/auth/register">
                 <Button size="lg" className="bg-white text-examind-700 hover:bg-white/90 h-12 px-8 text-base font-semibold">
@@ -382,7 +382,7 @@ export default function LandingPage() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
-              <p className="text-white/60 text-sm mt-4">No credit card required • 2 days free</p>
+              <p className="text-white/60 text-sm mt-4">No credit card required • for some days</p>
             </div>
           </div>
         </div>
@@ -398,7 +398,7 @@ export default function LandingPage() {
             <span className="font-bold gradient-text">ExamMind AI</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 ExamMind AI. Built with ❤️ for students.
+            © 2026 ExamMind AI. Built with ❤️ for students.
           </p>
           <div className="flex gap-4 text-sm text-muted-foreground">
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
