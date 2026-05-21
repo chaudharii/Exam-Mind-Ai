@@ -10,9 +10,16 @@ import {
   updateProfile,
   User,
   onAuthStateChanged,
+  getAuth,
+  GoogleAuthProvider,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, googleProvider, db } from "./config";
+import { doc, setDoc, getDoc, serverTimestamp, getFirestore } from "firebase/firestore";
+import app from "./config";
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: "select_account" });
 
 const emailVerificationActionCodeSettings: ActionCodeSettings = {
   url:

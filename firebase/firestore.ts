@@ -15,8 +15,11 @@ import {
   serverTimestamp,
   Timestamp,
   increment,
+  getFirestore,
 } from "firebase/firestore";
-import { db } from "./config";
+import app from "./config";
+
+export const db = getFirestore(app);
 
 // =========================================
 // USER SERVICES

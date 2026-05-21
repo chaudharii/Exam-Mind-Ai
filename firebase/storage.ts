@@ -6,8 +6,11 @@ import {
   getDownloadURL,
   deleteObject,
   UploadTask,
+  getStorage,
 } from "firebase/storage";
-import { storage } from "./config";
+import app from "./config";
+
+const storage = getStorage(app);
 
 // Upload file with progress tracking
 export function uploadFileWithProgress(
