@@ -1,182 +1,27 @@
 // app/auth/login/page.tsx
 "use client";
-
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  Brain,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  Chrome,
-  RefreshCw,
-} from "lucide-react";
-
+import { Brain, Chrome } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-
-import {
-  loginWithEmail,
-  loginWithGoogle,
-  logout,
-  resendVerificationEmail,
-} from "@/firebase/auth";
-
+import { loginWithGoogle } from "@/firebase/auth";
 import { toast } from "sonner";
 
-function LoginContent() {
+export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const verified = searchParams.get("verified");
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-
-  const [resendLoading, setResendLoading] = useState(false);
-  const [showResend, setShowResend] = useState(false);
-
-  // Fixed toast issue
-  useEffect(() => {
-    if (verified) {
-      toast.success("Email verified! Please sign in 🎉");
-    }
-  }, [verified]);
-
-  const handleEmailLogin = async (
-    e: React.FormEvent
-  ) => {
-    e.preventDefault();
-
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    setLoading(true);
-    setShowResend(false);
-
-    try {
-      const user = await loginWithEmail(
-        email,
-        password
-      );
-
-      if (!user.emailVerified) {
-        await logout();
-
-        setShowResend(true);
-
-        toast.error(
-          "Email not verified! Check inbox or spam folder 📧",
-          {
-            duration: 6000,
-          }
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      toast.success("Welcome back! 🎉");
-
-      router.push("/dashboard");
-    } catch (error: unknown) {
-      const err = error as {
-        code?: string;
-      };
-
-      const msg =
-        err.code === "auth/user-not-found"
-          ? "No account found with this email"
-          : err.code === "auth/wrong-password"
-          ? "Incorrect password"
-          : err.code === "auth/invalid-credential"
-          ? "Invalid email or password"
-          : err.code === "auth/too-many-requests"
-          ? "Too many attempts! Try again later"
-          : err.code ===
-            "auth/network-request-failed"
-          ? "Network error. Check internet connection"
-          : "Login failed. Please try again.";
-
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendVerification =
-    async () => {
-      if (!email || !password) {
-        toast.error(
-          "Please enter email and password first"
-        );
-        return;
-      }
-
-      setResendLoading(true);
-
-      try {
-        await resendVerificationEmail(
-          email,
-          password
-        );
-
-        toast.success(
-          "Verification email sent! Check inbox and spam 📧",
-          {
-            duration: 8000,
-          }
-        );
-      } catch (error: unknown) {
-        const err = error as {
-          message?: string;
-        };
-
-        if (
-          err.message ===
-          "Email already verified!"
-        ) {
-          toast.success(
-            "Email already verified! Please sign in."
-          );
-
-          setShowResend(false);
-        } else {
-          toast.error(
-            "Failed to resend. Try again."
-          );
-        }
-      } finally {
-        setResendLoading(false);
-      }
-    };
 
   const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-
+    setLoading(true);
     try {
       await loginWithGoogle();
-
       toast.success("Welcome back! 🎉");
-
       router.push("/dashboard");
     } catch {
-      toast.error(
-        "Google login failed. Please try again."
-      );
+      toast.error("Google login failed. Please try again.");
     } finally {
-      setGoogleLoading(false);
+      setLoading(false);
     }
   };
 
@@ -185,7 +30,6 @@ function LoginContent() {
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-examind-900 via-examind-800 to-purple-900 relative overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-grid opacity-20" />
-
         <div className="relative text-center px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -195,45 +39,25 @@ function LoginContent() {
             <div className="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center mx-auto mb-8 border border-white/20">
               <Brain className="w-10 h-10 text-white" />
             </div>
-
             <h2 className="text-4xl font-bold text-white mb-4">
               ExamMind AI
             </h2>
-
             <p className="text-white/70 text-lg max-w-md">
-              Your AI-powered study companion.
-              Analyze syllabi, predict
-              questions, generate notes, and ace
-              your exams.
+              Your AI-powered study companion. Analyze syllabi, predict
+              questions, generate notes, and ace your exams.
             </p>
-
             <div className="mt-12 grid grid-cols-2 gap-4 text-left">
               {[
-                {
-                  emoji: "🧠",
-                  text: "AI Syllabus Analysis",
-                },
-                {
-                  emoji: "📊",
-                  text: "PYQ Predictions",
-                },
-                {
-                  emoji: "✍️",
-                  text: "Handwritten Assignments",
-                },
-                {
-                  emoji: "📅",
-                  text: "Smart Study Planner",
-                },
+                { emoji: "🧠", text: "AI Syllabus Analysis" },
+                { emoji: "📊", text: "PYQ Predictions" },
+                { emoji: "✍️", text: "Handwritten Assignments" },
+                { emoji: "📅", text: "Smart Study Planner" },
               ].map((item) => (
                 <div
                   key={item.text}
                   className="flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/10"
                 >
-                  <span className="text-2xl">
-                    {item.emoji}
-                  </span>
-
+                  <span className="text-2xl">{item.emoji}</span>
                   <span className="text-white/80 text-sm font-medium">
                     {item.text}
                   </span>
@@ -250,203 +74,43 @@ function LoginContent() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md text-center"
         >
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-examind-500 to-purple-600 flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
+          {/* Mobile Logo */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-examind-500 to-purple-600 flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
             </div>
-
-            <span className="font-bold text-xl gradient-text">
+            <span className="font-bold text-2xl gradient-text">
               ExamMind AI
             </span>
           </div>
 
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">
-              Welcome back
-            </h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome!</h1>
+          <p className="text-muted-foreground mb-8">
+            Sign in with Google to continue your studies
+          </p>
 
-            <p className="text-muted-foreground">
-              Sign in to continue your studies
-            </p>
-          </div>
-
-          {/* Google Login */}
           <Button
             type="button"
             variant="outline"
-            className="w-full h-11 mb-4 gap-2"
+            className="w-full h-12 gap-3 text-base"
             onClick={handleGoogleLogin}
-            disabled={googleLoading}
+            disabled={loading}
           >
-            {googleLoading ? (
-              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Chrome className="w-4 h-4" />
+              <Chrome className="w-5 h-5" />
             )}
-
             Continue with Google
           </Button>
 
-          <div className="relative mb-4">
-            <Separator />
-
-            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-background px-3 text-xs text-muted-foreground">
-              or sign in with email
-            </span>
-          </div>
-
-          {/* Resend Verification */}
-          {showResend && (
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: -10,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4"
-            >
-              <p className="text-amber-700 dark:text-amber-400 text-sm mb-2">
-                📧 Email not verified yet?
-              </p>
-
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={
-                  handleResendVerification
-                }
-                disabled={resendLoading}
-                className="gap-1.5 border-amber-400 text-amber-700"
-              >
-                {resendLoading ? (
-                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <RefreshCw className="w-3.5 h-3.5" />
-                )}
-
-                Resend Verification Email
-              </Button>
-            </motion.div>
-          )}
-
-          {/* Email Form */}
-          <form
-            onSubmit={handleEmailLogin}
-            className="space-y-4"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email
-              </Label>
-
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  className="pl-10"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value)
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">
-                  Password
-                </Label>
-
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-xs text-examind-600 hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-
-                <Input
-                  id="password"
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
-                  placeholder="••••••••"
-                  className="pl-10 pr-10"
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(
-                      e.target.value
-                    )
-                  }
-                  required
-                />
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowPassword(
-                      !showPassword
-                    )
-                  }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-11 bg-examind-600 hover:bg-examind-700 text-white"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-          </form>
-
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Don't have an account?{" "}
-            <Link
-              href="/auth/register"
-              className="text-examind-600 hover:underline font-medium"
-            >
-              Sign up free
-            </Link>
+          <p className="text-xs text-muted-foreground mt-6">
+            By signing in you agree to our Terms and Privacy Policy
           </p>
         </motion.div>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LoginContent />
-    </Suspense>
   );
 }
