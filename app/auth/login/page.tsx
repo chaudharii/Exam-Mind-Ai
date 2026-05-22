@@ -1,24 +1,39 @@
 // app/auth/login/page.tsx
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Brain, Mail, Lock, Eye, EyeOff, Chrome } from "lucide-react";
+import { Brain, Mail, Lock, Eye, EyeOff, Chrome, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { loginWithEmail, loginWithGoogle, logout } from "@/firebase/auth";
+import {
+  loginWithEmail,
+  loginWithGoogle,
+  logout,
+  resendVerificationEmail,
+} from "@/firebase/auth";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const verified = searchParams.get("verified");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+
+  // Show success if coming from verification
+  if (verified) {
+    toast.success("Email verified! Please sign in 🎉");
+  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,24 +42,25 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-
+    setShowResend(false);
     try {
       const user = await loginWithEmail(email, password);
-      await user.reload();
 
       if (!user.emailVerified) {
         await logout();
+        setShowResend(true);
         toast.error(
-          "Please verify your email first! Check your inbox 📧",
-          { duration: 5000 }
+          "Email not verified! Check inbox or spam folder 📧",
+          { duration: 6000 }
         );
+        setLoading(false);
         return;
       }
 
-      toast.success("Welcome Student! 🎉");
+      toast.success("Welcome back! 🎉");
       router.push("/dashboard");
     } catch (error: unknown) {
-      const err = error as { code?: string; message?: string };
+      const err = error as { code?: string };
       const msg =
         err.code === "auth/user-not-found"
           ? "No account found with this email"
@@ -54,8 +70,8 @@ export default function LoginPage() {
           ? "Invalid email or password"
           : err.code === "auth/too-many-requests"
           ? "Too many attempts! Try again later"
-          : err.message
-          ? err.message
+          : err.code === "auth/network-request-failed"
+          ? "Network error. Check internet connection"
           : "Login failed. Please try again.";
       toast.error(msg);
     } finally {
@@ -63,11 +79,36 @@ export default function LoginPage() {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!email || !password) {
+      toast.error("Please enter email and password first");
+      return;
+    }
+    setResendLoading(true);
+    try {
+      await resendVerificationEmail(email, password);
+      toast.success(
+        "Verification email sent! Check inbox and spam 📧",
+        { duration: 8000 }
+      );
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      if (err.message === "Email already verified!") {
+        toast.success("Email already verified! Please sign in.");
+        setShowResend(false);
+      } else {
+        toast.error("Failed to resend. Try again.");
+      }
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      toast.success("Welcome Student! 🎉");
+      toast.success("Welcome back! 🎉");
       router.push("/dashboard");
     } catch {
       toast.error("Google login failed. Please try again.");
@@ -78,6 +119,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-examind-900 via-examind-800 to-purple-900 relative overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-grid opacity-20" />
         <div className="relative text-center px-12">
@@ -118,6 +160,7 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
@@ -135,12 +178,13 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome Student!</h1>
+            <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
             <p className="text-muted-foreground">
               Sign in to continue your studies
             </p>
           </div>
 
+          {/* Google Login */}
           <Button
             type="button"
             variant="outline"
@@ -163,6 +207,35 @@ export default function LoginPage() {
             </span>
           </div>
 
+          {/* Resend Verification Banner */}
+          {showResend && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4"
+            >
+              <p className="text-amber-700 dark:text-amber-400 text-sm mb-2">
+                📧 Email not verified yet?
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleResendVerification}
+                disabled={resendLoading}
+                className="gap-1.5 border-amber-400 text-amber-700"
+              >
+                {resendLoading ? (
+                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5" />
+                )}
+                Resend Verification Email
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Email Form */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

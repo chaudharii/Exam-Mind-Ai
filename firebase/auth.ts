@@ -1,6 +1,5 @@
 // firebase/auth.ts
 import {
-  ActionCodeSettings,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -8,26 +7,23 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
+  reload,
   User,
   onAuthStateChanged,
-  getAuth,
-  GoogleAuthProvider,
+  ActionCodeSettings,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp, getFirestore } from "firebase/firestore";
-import app from "./config";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { auth, googleProvider, db } from "./config";
 
-const auth = getAuth(app);
-const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: "select_account" });
-
-const emailVerificationActionCodeSettings: ActionCodeSettings = {
-  url:
-    process.env.NEXT_PUBLIC_EMAIL_VERIFICATION_URL ||
-    "https://exam-mind-ai-six.vercel.app/auth/login",
+// Action code settings — production URL
+const actionCodeSettings: ActionCodeSettings = {
+  url: process.env.NEXT_PUBLIC_APP_URL
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/login?verified=true`
+    : "https://exam-mind-ai-six.vercel.app/auth/login?verified=true",
   handleCodeInApp: false,
 };
 
+// Create user profile
 async function createUserProfile(
   user: User,
   additionalData?: { displayName?: string }
@@ -37,7 +33,7 @@ async function createUserProfile(
   if (!userSnap.exists()) {
     const { email, displayName, photoURL, uid } = user;
     const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 2);
+    trialEnd.setDate(trialEnd.getDate() + 30);
     await setDoc(userRef, {
       uid,
       email,
@@ -61,6 +57,7 @@ async function createUserProfile(
   return userRef;
 }
 
+// Register
 export async function registerWithEmail(
   email: string,
   password: string,
@@ -71,51 +68,82 @@ export async function registerWithEmail(
     email,
     password
   );
-  await updateProfile(userCredential.user, { displayName });
-  await createUserProfile(userCredential.user, { displayName });
+  const user = userCredential.user;
 
+  await updateProfile(user, { displayName });
+  await createUserProfile(user, { displayName });
+
+  // Send verification with action URL
   try {
-    await sendEmailVerification(
-      userCredential.user,
-      emailVerificationActionCodeSettings
-    );
-  } catch (error: unknown) {
-    await signOut(auth);
-    const authError = error as { message?: string };
-    throw new Error(
-      authError.message ||
-        "Unable to send verification email. Please check Firebase email settings and try again."
-    );
+    await sendEmailVerification(user, actionCodeSettings);
+    console.log("Verification email sent to:", email);
+  } catch (e) {
+    console.error("Verification email error:", e);
   }
 
   await signOut(auth);
-  return userCredential.user;
+  return user;
 }
 
+// Resend verification email
+export async function resendVerificationEmail(
+  email: string,
+  password: string
+) {
+  const userCredential = await signInWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+  const user = userCredential.user;
+
+  if (user.emailVerified) {
+    await signOut(auth);
+    throw new Error("Email already verified!");
+  }
+
+  await sendEmailVerification(user, actionCodeSettings);
+  await signOut(auth);
+  return true;
+}
+
+// Login
 export async function loginWithEmail(email: string, password: string) {
   const userCredential = await signInWithEmailAndPassword(
     auth,
     email,
     password
   );
-  await userCredential.user.reload();
-  return userCredential.user;
+  const user = userCredential.user;
+
+  // Reload to get latest emailVerified status
+  await reload(user);
+
+  return user;
 }
 
+// Google login
 export async function loginWithGoogle() {
   const userCredential = await signInWithPopup(auth, googleProvider);
   await createUserProfile(userCredential.user);
   return userCredential.user;
 }
 
+// Logout
 export async function logout() {
   await signOut(auth);
 }
 
+// Reset password
 export async function resetPassword(email: string) {
-  await sendPasswordResetEmail(auth, email);
+  await sendPasswordResetEmail(auth, email, {
+    url: process.env.NEXT_PUBLIC_APP_URL
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`
+      : "https://exam-mind-ai-six.vercel.app/auth/login",
+  });
 }
 
+// Get user profile
 export async function getUserProfile(uid: string) {
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
@@ -125,6 +153,7 @@ export async function getUserProfile(uid: string) {
   return null;
 }
 
+// Auth state observer
 export function onAuthChange(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);
 }

@@ -66,75 +66,103 @@ export default function SyllabusAnalyzerPage() {
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!file || !user) {
-      toast.error("Please select a file first");
-      return;
-    }
+const handleAnalyze = async () => {
+  if (!file || !user) {
+    toast.error("Please select a file");
+    return;
+  }
 
+  try {
     setLoading(true);
     setProgress(10);
 
-    try {
-      // Read file text
-      setProgress(30);
+    // Read file text
+    const text = await file.text();
 
-      // Upload to Firebase Storage
-      let fileUrl = "";
-      try {
-        fileUrl = await uploadSyllabus(user.uid, file);
-      } catch {
-        console.warn("Storage upload failed, continuing with analysis");
-      }
-      setProgress(50);
+    setProgress(40);
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("subject", subject || "General");
-      formData.append("uid", user.uid);
-
-      const response = await fetch("/api/ai/analyze-syllabus", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Server error" }));
-        throw new Error(error.error || `HTTP ${response.status}`);
-      }
-      const result = await response.json();
-      setProgress(80);
-
-      // Save to Firestore
-      await saveUpload(user.uid, {
-        type: "syllabus",
-        fileName: file.name,
-        fileUrl,
-        analysis: result,
-        subject: subject || "General",
-      });
-      setProgress(100);
-
-      setAnalysis(result);
-      if (user) {
-        await incrementUserProfileField(user.uid, "aiUsageCount", 1);
-        await refreshProfile();
-      }
-      toast.success("Syllabus analyzed successfully!");
-    } catch (err) {
-      console.error(err);
-      const errorMsg = err instanceof Error ? err.message : "Unknown error";
-      if (errorMsg.includes("timeout")) {
-        toast.error("Analysis took too long. Try a smaller file.");
-      } else if (errorMsg.includes("504")) {
-        toast.error("Server timeout. Please try again.");
-      } else {
-        toast.error(errorMsg || "Analysis failed. Please try again.");
-      }
-    } finally {
+    // Validate content
+    if (!text || text.trim().length < 10) {
+      toast.error("File appears empty or unreadable");
       setLoading(false);
+      return;
     }
-  };
+
+    setProgress(60);
+
+    // API request
+    const response = await fetch("/api/ai/analyze-syllabus", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: text.slice(0, 5000),
+        subject: subject || "General",
+        uid: user.uid,
+      }),
+    });
+
+    // Handle API errors
+    if (!response.ok) {
+      const errorData = await response.json();
+
+      throw new Error(
+        errorData.error || "Syllabus analysis failed"
+      );
+    }
+
+    // Parse response
+    const result: SyllabusAnalysis =
+      await response.json();
+
+    setProgress(90);
+
+    // Save upload
+    await saveUpload(user.uid, {
+      type: "syllabus",
+      fileName: file.name,
+      fileUrl: "",
+      subject: subject || "General",
+      analysis: result as unknown as Record<
+        string,
+        unknown
+      >,
+    });
+
+    // Update user stats
+    await incrementUserProfileField(
+      user.uid,
+      "aiUsageCount",
+      1
+    );
+
+    setProgress(100);
+
+    // Save analysis to state
+    setAnalysis(result);
+
+    // Refresh profile
+    await refreshProfile();
+
+    toast.success(
+      "Syllabus analysis complete! 🎉"
+    );
+  } catch (err) {
+    console.error(
+      "Syllabus analysis error:",
+      err
+    );
+
+    toast.error(
+      err instanceof Error
+        ? err.message
+        : "Analysis failed. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const chartData = analysis?.units.map((unit) => ({
     name: unit.name.length > 20 ? unit.name.substring(0, 20) + "..." : unit.name,
