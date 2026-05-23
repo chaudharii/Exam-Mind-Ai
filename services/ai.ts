@@ -1,147 +1,339 @@
+// services/ai.ts
 import Groq from "groq-sdk";
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
-  timeout: 50000, // 50 second timeout
-  maxRetries: 1, // Let our withRetry handle retries
+  timeout: 60000,
+  maxRetries: 2,
 });
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+// ======================================================
+// RETRY
+// ======================================================
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries = 3
+): Promise<T> {
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.log(`Attempt ${i + 1}/${retries} failed: ${errorMsg}`);
       if (i === retries - 1) throw error;
-      const delay = 1000 * (i + 1);
-      console.log(`Retrying in ${delay}ms...`);
-      await new Promise((r) => setTimeout(r, delay));
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
     }
   }
   throw new Error("Max retries exceeded");
 }
 
-function extractJsonObject(text: string) {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("Unable to locate JSON object in AI response");
-  }
-  return text.slice(start, end + 1);
-}
-
-function parseAiResponse(content: string) {
-  const trimmed = content.trim();
+// ======================================================
+// SAFE JSON PARSER
+// ======================================================
+function safeJsonParse(content: string) {
   try {
-    return JSON.parse(trimmed);
+    return JSON.parse(content);
   } catch {
-    return JSON.parse(extractJsonObject(trimmed));
+    try {
+      const match = content.match(/\{[\s\S]*\}/);
+      if (match) return JSON.parse(match[0]);
+    } catch {}
+    return null;
   }
 }
 
-export async function analyzeSyllabus(syllabusText: string, subject: string = "General") {
+// ======================================================
+// SYLLABUS ANALYZER
+// ======================================================
+export async function analyzeSyllabus(
+  syllabusText: string,
+  subject: string = "General"
+) {
   return withRetry(async () => {
-    const res = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: "You are a syllabus analyzer. Return valid JSON only, no markdown." },
-        {
-          role: "user",
-          content: `Analyze the syllabus for the subject "${subject}" and return valid JSON only. Use this format exactly: {"units":[{"name":"Unit","topics":["topic1"],"weightage":20}],"summary":"summary","importantTopics":["topic"],"totalTopics":5}\n\nSyllabus: ${syllabusText.slice(0, 3000)}`,
-        },
-      ],
-      temperature: 0.3,
-      max_tokens: 2000,
-    });
-    return parseAiResponse(res.choices[0].message.content || "");
+    try {
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: "You are an AI syllabus analyzer. Return ONLY valid JSON, no extra text.",
+          },
+          {
+            role: "user",
+            content: `Analyze this syllabus for ${subject}.
+Return ONLY this JSON:
+{
+  "units": [{"name": "Unit Name", "topics": ["Topic 1"], "weightage": 20}],
+  "summary": "short summary",
+  "importantTopics": ["Topic"],
+  "totalTopics": 5
+}
+
+Syllabus text:
+${syllabusText.slice(0, 2000)}`,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 1000,
+      });
+
+      const content = completion.choices?.[0]?.message?.content || "";
+      const parsed = safeJsonParse(content);
+      if (!parsed) {
+        return {
+          units: [],
+          summary: "Could not analyze syllabus",
+          importantTopics: [],
+          totalTopics: 0,
+        };
+      }
+      return {
+        units: Array.isArray(parsed.units) ? parsed.units : [],
+        summary: parsed.summary || "No summary",
+        importantTopics: Array.isArray(parsed.importantTopics) ? parsed.importantTopics : [],
+        totalTopics: typeof parsed.totalTopics === "number" ? parsed.totalTopics : 0,
+      };
+    } catch (error) {
+      console.error("analyzeSyllabus error:", error);
+      return { units: [], summary: "Analysis failed", importantTopics: [], totalTopics: 0 };
+    }
   });
 }
 
-export async function analyzePYQ(pyqText: string, subject: string = "General") {
+// ======================================================
+// PYQ ANALYZER
+// ======================================================
+export async function analyzePYQ(
+  pyqText: string,
+  subject: string = "General"
+) {
   return withRetry(async () => {
-    const res = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: "You analyze previous year question papers. Return valid JSON only, no markdown." },
-        {
-          role: "user",
-          content: `Analyze previous year questions for the subject "${subject}" and return valid JSON only. Use this format exactly: {"repeatedQuestions":[{"question":"q","frequency":3,"probability":85}],"importantTopics":[{"topic":"t","weightage":30}],"predictions":[{"question":"q","probability":90,"reasoning":"r"}],"trends":["trend1"]}\n\nPYQ: ${pyqText.slice(0, 3000)}`,
-        },
-      ],
-      temperature: 0.2,
-      max_tokens: 2000,
-    });
-    return parseAiResponse(res.choices[0].message.content || "");
+    try {
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: "You analyze previous year question papers. Return ONLY valid JSON, no extra text.",
+          },
+          {
+            role: "user",
+            content: `Analyze these ${subject} PYQ papers.
+Return ONLY this JSON:
+{
+  "repeatedQuestions": [{"question": "q", "frequency": 2, "probability": 80}],
+  "importantTopics": [{"topic": "t", "weightage": 30}],
+  "predictions": [{"question": "q", "probability": 85, "reasoning": "reason"}],
+  "trends": ["trend"]
+}
+
+PYQ text:
+${pyqText.slice(0, 2000)}`,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 1200,
+      });
+
+      const content = completion.choices?.[0]?.message?.content || "";
+      const parsed = safeJsonParse(content);
+      if (!parsed) {
+        return { repeatedQuestions: [], importantTopics: [], predictions: [], trends: [] };
+      }
+      return {
+        repeatedQuestions: Array.isArray(parsed.repeatedQuestions) ? parsed.repeatedQuestions : [],
+        importantTopics: Array.isArray(parsed.importantTopics) ? parsed.importantTopics : [],
+        predictions: Array.isArray(parsed.predictions) ? parsed.predictions : [],
+        trends: Array.isArray(parsed.trends) ? parsed.trends : [],
+      };
+    } catch (error) {
+      console.error("analyzePYQ error:", error);
+      return { repeatedQuestions: [], importantTopics: [], predictions: [], trends: [] };
+    }
   });
 }
 
-export async function generateNotes(topic: string, subject: string, noteType: string) {
+// ======================================================
+// NOTES GENERATOR
+// ======================================================
+export async function generateNotes(
+  topic: string,
+  subject: string,
+  noteType: string
+) {
   return withRetry(async () => {
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: `You are an expert tutor for ${subject}. Return valid JSON only, no markdown.` },
-        { role: "user", content: `Generate ${noteType} notes for "${topic}" in ${subject}. Return JSON: {"title":"Title","content":"detailed content here","keyPoints":["point1","point2"],"formulas":["formula1"],"definitions":{"term":"definition"}}` },
+        {
+          role: "system",
+          content: "You are an expert tutor. Return ONLY valid JSON.",
+        },
+        {
+          role: "user",
+          content: `Generate ${noteType} notes for "${topic}" in ${subject}.
+Return JSON:
+{
+  "title": "Title",
+  "content": "Detailed notes here",
+  "keyPoints": ["Point 1", "Point 2"],
+  "formulas": ["Formula 1"],
+  "definitions": {"Term": "Definition"}
+}`,
+        },
       ],
       temperature: 0.4,
-      max_tokens: 2000,
+      max_tokens: 1500,
     });
-    return JSON.parse(res.choices[0].message.content || "{}");
+    return safeJsonParse(res.choices?.[0]?.message?.content || "") || {
+      title: topic,
+      content: "Could not generate notes",
+      keyPoints: [],
+      formulas: [],
+      definitions: {},
+    };
   });
 }
 
-export async function generateAssignmentAnswer(question: string, subject: string) {
+// ======================================================
+// ASSIGNMENT GENERATOR
+// ======================================================
+export async function generateAssignmentAnswer(
+  question: string,
+  subject: string
+) {
   return withRetry(async () => {
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: "You write formal assignment answers. Return valid JSON only, no markdown." },
-        { role: "user", content: `Write assignment for: "${question}" in ${subject}. Return JSON: {"answer":"full answer","wordCount":400,"sections":[{"heading":"Introduction","content":"intro text"},{"heading":"Main Body","content":"main text"},{"heading":"Conclusion","content":"conclusion text"}]}` },
+        {
+          role: "system",
+          content: "You write formal assignment answers. Return ONLY valid JSON.",
+        },
+        {
+          role: "user",
+          content: `Write assignment answer for: "${question}" in ${subject}.
+Return JSON:
+{
+  "answer": "Full detailed answer here",
+  "wordCount": 400,
+  "sections": [
+    {"heading": "Introduction", "content": "intro text"},
+    {"heading": "Main Body", "content": "main text"},
+    {"heading": "Conclusion", "content": "conclusion text"}
+  ]
+}`,
+        },
       ],
       temperature: 0.5,
-      max_tokens: 2500,
+      max_tokens: 1800,
     });
-    return JSON.parse(res.choices[0].message.content || "{}");
+    return safeJsonParse(res.choices?.[0]?.message?.content || "") || {
+      answer: "Could not generate answer",
+      wordCount: 0,
+      sections: [],
+    };
   });
 }
 
-export async function generateVivaQuestions(subject: string, topic: string) {
+// ======================================================
+// VIVA QUESTIONS
+// ======================================================
+export async function generateVivaQuestions(
+  subject: string,
+  topic: string
+) {
   return withRetry(async () => {
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: "You are a professor generating viva questions. Return valid JSON only, no markdown." },
-        { role: "user", content: `Generate 8 viva questions for "${topic}" in ${subject}. Return JSON: {"questions":[{"question":"q","answer":"detailed answer","difficulty":"medium","followUps":["followup1"]}]}` },
+        {
+          role: "system",
+          content: "You generate viva questions. Return ONLY valid JSON.",
+        },
+        {
+          role: "user",
+          content: `Generate 8 viva questions for "${topic}" in ${subject}.
+Return JSON:
+{
+  "questions": [
+    {
+      "question": "Question here",
+      "answer": "Detailed answer",
+      "difficulty": "medium",
+      "followUps": ["Follow up question"]
+    }
+  ]
+}`,
+        },
       ],
-      temperature: 0.5,
-      max_tokens: 3000,
+      temperature: 0.4,
+      max_tokens: 1800,
     });
-    return JSON.parse(res.choices[0].message.content || "{}");
+    return safeJsonParse(res.choices?.[0]?.message?.content || "") || { questions: [] };
   });
 }
 
+// ======================================================
+// STUDY PLANNER
+// ======================================================
 export async function generateStudyPlan(input: {
   examDate: string;
   subjects: string[];
   preparationLevel: string;
   dailyHours: number;
 }) {
-  const daysLeft = Math.ceil((new Date(input.examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.ceil(
+    (new Date(input.examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  );
+
   return withRetry(async () => {
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: "You are a study planner. Return valid JSON only, no markdown." },
-        { role: "user", content: `Create 7-day study plan. Days left: ${daysLeft}, Subjects: ${input.subjects.join(", ")}, Level: ${input.preparationLevel}, Hours/day: ${input.dailyHours}. Return JSON: {"overview":"plan overview","dailyPlan":[{"date":"2026-05-17","day":"Monday","tasks":[{"subject":"Math","topic":"Calculus","duration":60,"type":"study"}],"totalHours":4}],"weeklyGoals":["goal1"],"tips":["tip1"]}` },
+        {
+          role: "system",
+          content: "You are a study planner. Return ONLY valid JSON.",
+        },
+        {
+          role: "user",
+          content: `Create 7-day study plan.
+Days left: ${daysLeft}
+Subjects: ${input.subjects.join(", ")}
+Level: ${input.preparationLevel}
+Hours/day: ${input.dailyHours}
+
+Return JSON:
+{
+  "overview": "Plan overview",
+  "dailyPlan": [
+    {
+      "date": "2026-05-23",
+      "day": "Monday",
+      "tasks": [
+        {"subject": "Math", "topic": "Calculus", "duration": 60, "type": "study"}
+      ],
+      "totalHours": 4
+    }
+  ],
+  "weeklyGoals": ["Goal 1"],
+  "tips": ["Tip 1"]
+}`,
+        },
       ],
       temperature: 0.4,
-      max_tokens: 3000,
+      max_tokens: 2000,
     });
-    return JSON.parse(res.choices[0].message.content || "{}");
+    return safeJsonParse(res.choices?.[0]?.message?.content || "") || {
+      overview: "Study plan",
+      dailyPlan: [],
+      weeklyGoals: [],
+      tips: [],
+    };
   });
 }
 
+// ======================================================
+// PERFORMANCE PREDICTOR
+// ======================================================
 export async function predictPerformance(input: {
   attendance: number;
   internalMarks: number;
@@ -153,16 +345,51 @@ export async function predictPerformance(input: {
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: "You predict exam performance. Return valid JSON only, no markdown." },
-        { role: "user", content: `Predict performance. Attendance: ${input.attendance}%, Internal: ${input.internalMarks}/100, Study hours: ${input.studyHours}/day, Syllabus: ${input.syllabusCompletion}%, Subjects: ${input.subjects.join(", ")}. Return JSON: {"passProbability":85,"predictedMarks":72,"grade":"B+","weakSubjects":["Math"],"strengths":["Physics"],"recommendations":["Study more"],"breakdown":[{"factor":"Attendance","score":80,"impact":"high"}]}` },
+        {
+          role: "system",
+          content: "You predict exam performance. Return ONLY valid JSON.",
+        },
+        {
+          role: "user",
+          content: `Predict performance:
+Attendance: ${input.attendance}%
+Internal Marks: ${input.internalMarks}/100
+Study Hours: ${input.studyHours}/day
+Syllabus: ${input.syllabusCompletion}%
+Subjects: ${input.subjects.join(", ")}
+
+Return JSON:
+{
+  "passProbability": 85,
+  "predictedMarks": 72,
+  "grade": "B+",
+  "weakSubjects": ["Math"],
+  "strengths": ["Physics"],
+  "recommendations": ["Study more"],
+  "breakdown": [
+    {"factor": "Attendance", "score": 80, "impact": "high"}
+  ]
+}`,
+        },
       ],
       temperature: 0.2,
-      max_tokens: 1500,
+      max_tokens: 1000,
     });
-    return JSON.parse(res.choices[0].message.content || "{}");
+    return safeJsonParse(res.choices?.[0]?.message?.content || "") || {
+      passProbability: 0,
+      predictedMarks: 0,
+      grade: "N/A",
+      weakSubjects: [],
+      strengths: [],
+      recommendations: [],
+      breakdown: [],
+    };
   });
 }
 
+// ======================================================
+// CHATBOT
+// ======================================================
 export async function chatWithAI(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   subject?: string
@@ -173,13 +400,15 @@ export async function chatWithAI(
       messages: [
         {
           role: "system",
-          content: `You are ExamMind AI, a helpful academic assistant for students. ${subject ? `Student is studying ${subject}.` : ""} Help students understand concepts and prepare for exams. Be clear and encouraging.`,
+          content: `You are ExamMind AI assistant helping students study.${
+            subject ? ` Subject: ${subject}.` : ""
+          } Be helpful, clear and encouraging.`,
         },
         ...messages.slice(-10),
       ],
       temperature: 0.7,
       max_tokens: 1000,
     });
-    return res.choices[0].message.content || "Sorry, please try again!";
+    return res.choices?.[0]?.message?.content || "Please try again.";
   });
 }

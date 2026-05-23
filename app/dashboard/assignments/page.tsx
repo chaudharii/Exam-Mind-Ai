@@ -257,14 +257,25 @@ export default function AssignmentsPage() {
             </div>
 
             {/* Answer Sections */}
-            <div className="space-y-4">
-              {assignment.sections.map((section, i) => (
-                <div key={i} className="border-l-2 border-examind-500 pl-4">
-                  <h4 className="font-semibold text-sm text-examind-600 mb-2">{section.heading}</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{section.content}</p>
-                </div>
-              ))}
-            </div>
+           {/* Answer Sections */}
+         <div className="space-y-4">
+  {Array.isArray(assignment?.sections) && assignment.sections.length > 0 ? (
+    assignment.sections.map((section, i) => (
+      <div key={i} className="border-l-2 border-examind-500 pl-4">
+        <h4 className="font-semibold text-sm text-examind-600 mb-2">
+          {section.heading}
+        </h4>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {section.content}
+        </p>
+      </div>
+    ))
+  ) : (
+    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+      {assignment?.answer || "No answer generated"}
+    </p>
+  )}
+    </div>
           </motion.div>
         )}
       </AnimatePresence>

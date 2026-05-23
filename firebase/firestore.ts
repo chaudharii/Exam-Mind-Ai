@@ -7,13 +7,11 @@ import {
   getDoc,
   getDocs,
   updateDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
   limit,
   serverTimestamp,
-  Timestamp,
   increment,
   getFirestore,
 } from "firebase/firestore";
@@ -25,12 +23,19 @@ export const db = getFirestore(app);
 // USER SERVICES
 // =========================================
 
-export async function updateUserProfile(uid: string, data: Record<string, unknown>) {
+export async function updateUserProfile(
+  uid: string,
+  data: Record<string, unknown>
+) {
   const userRef = doc(db, "users", uid);
   await updateDoc(userRef, { ...data, updatedAt: serverTimestamp() });
 }
 
-export async function incrementUserProfileField(uid: string, field: string, value: number) {
+export async function incrementUserProfileField(
+  uid: string,
+  field: string,
+  value: number
+) {
   const userRef = doc(db, "users", uid);
   await updateDoc(userRef, {
     [field]: increment(value),
@@ -49,13 +54,16 @@ export async function getUserProfile(uid: string) {
 // UPLOADS / SYLLABUS
 // =========================================
 
-export async function saveUpload(uid: string, data: {
-  type: string;
-  fileName: string;
-  fileUrl: string;
-  analysis?: Record<string, unknown>;
-  subject?: string;
-}) {
+export async function saveUpload(
+  uid: string,
+  data: {
+    type: string;
+    fileName: string;
+    fileUrl: string;
+    analysis?: Record<string, unknown>;
+    subject?: string;
+  }
+) {
   const ref = await addDoc(collection(db, "uploads"), {
     uid,
     ...data,
@@ -79,12 +87,15 @@ export async function getUserUploads(uid: string) {
 // NOTES
 // =========================================
 
-export async function saveNote(uid: string, data: {
-  subject: string;
-  topic: string;
-  type: string;
-  content: string;
-}) {
+export async function saveNote(
+  uid: string,
+  data: {
+    subject: string;
+    topic: string;
+    type: string;
+    content: string;
+  }
+) {
   const ref = await addDoc(collection(db, "notes"), {
     uid,
     ...data,
@@ -108,12 +119,15 @@ export async function getUserNotes(uid: string) {
 // ASSIGNMENTS
 // =========================================
 
-export async function saveAssignment(uid: string, data: {
-  question: string;
-  answer: string;
-  subject?: string;
-  pdfUrl?: string;
-}) {
+export async function saveAssignment(
+  uid: string,
+  data: {
+    question: string;
+    answer: string;
+    subject?: string;
+    pdfUrl?: string;
+  }
+) {
   const ref = await addDoc(collection(db, "assignments"), {
     uid,
     ...data,
@@ -137,11 +151,14 @@ export async function getUserAssignments(uid: string) {
 // CHAT HISTORY
 // =========================================
 
-export async function saveChatMessage(uid: string, data: {
-  role: "user" | "assistant";
-  content: string;
-  sessionId: string;
-}) {
+export async function saveChatMessage(
+  uid: string,
+  data: {
+    role: "user" | "assistant";
+    content: string;
+    sessionId: string;
+  }
+) {
   await addDoc(collection(db, "chatHistory"), {
     uid,
     ...data,
@@ -165,12 +182,15 @@ export async function getChatHistory(uid: string, sessionId: string) {
 // STUDY PLANS
 // =========================================
 
-export async function saveStudyPlan(uid: string, data: {
-  examDate: string;
-  subjects: string[];
-  preparationLevel: string;
-  plan: Record<string, unknown>;
-}) {
+export async function saveStudyPlan(
+  uid: string,
+  data: {
+    examDate: string;
+    subjects: string[];
+    preparationLevel: string;
+    plan: Record<string, unknown>;
+  }
+) {
   const ref = await addDoc(collection(db, "studyPlans"), {
     uid,
     ...data,
@@ -194,7 +214,10 @@ export async function getUserStudyPlans(uid: string) {
 // PREDICTIONS
 // =========================================
 
-export async function savePrediction(uid: string, data: Record<string, unknown>) {
+export async function savePrediction(
+  uid: string,
+  data: Record<string, unknown>
+) {
   const ref = await addDoc(collection(db, "predictions"), {
     uid,
     ...data,
@@ -204,57 +227,9 @@ export async function savePrediction(uid: string, data: Record<string, unknown>)
 }
 
 // =========================================
-// SUBSCRIPTIONS
+// STUDY STREAK
 // =========================================
 
-export async function saveSubscription(uid: string, data: {
-  plan: string;
-  razorpaySubscriptionId?: string;
-  razorpayPaymentId?: string;
-  status: string;
-  amount: number;
-  currency: string;
-  nextBillingDate?: string;
-}) {
-  const subRef = doc(db, "subscriptions", uid);
-  await setDoc(subRef, {
-    uid,
-    ...data,
-    updatedAt: serverTimestamp(),
-    createdAt: serverTimestamp(),
-  });
-}
-
-export async function getSubscription(uid: string) {
-  const subRef = doc(db, "subscriptions", uid);
-  const snap = await getDoc(subRef);
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
-}
-
-// =========================================
-// PAYMENT LOGS
-// =========================================
-
-export async function logPayment(uid: string, data: Record<string, unknown>) {
-  await addDoc(collection(db, "paymentLogs"), {
-    uid,
-    ...data,
-    createdAt: serverTimestamp(),
-  });
-}
-
-export async function getPaymentHistory(uid: string) {
-  const q = query(
-    collection(db, "paymentLogs"),
-    where("uid", "==", uid),
-    orderBy("createdAt", "desc"),
-    limit(20)
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-
-// Update study streak
 export async function updateStudyStreak(uid: string) {
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
